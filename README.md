@@ -12,11 +12,14 @@
   * Python 3
      * pandas
      * tqdm (optional)
+     
+  * Alana JSON data
+     
   
   
 ##  How to : 
 
-Given the data from the Alana project, clone this repository and execute the following commands :
+Clone this repository and execute the following commands :
 
 ### Initial preprocessing : 
 ```bash
