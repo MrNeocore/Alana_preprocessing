@@ -7,7 +7,8 @@
 
 
 ## Requirements :
-  Linux (bash + sed)
+  Linux (bash + sed) [for preprocessing only]
+  
   Python 3
     - pandas 
     - tqdm (optional)
