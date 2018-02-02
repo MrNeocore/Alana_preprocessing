@@ -24,8 +24,9 @@ chmod +x preprocessing_alana.sh
 ./preprocessing_alana.sh <ALANA_RAW_DATA_FILE>
 ```
 
-If not renamed, the <ALANA_RAW_DATA_FILE> can be "sample_10.json" or "sample_20.json"
-This is mostly to make the data human readable (and loadable by a text editor.. because one line of 200M character isn't optimal)
+If not renamed, the <ALANA_RAW_DATA_FILE> can be "sample_10.json" or "sample_20.json".
+
+This is mostly to make the data human readable (and loadable by a text editor.. at least mine, it doesn't like 200M characters lines much [Very practical if you want to eat all your RAM though])
 
 ### Annotation :
 ```bash
