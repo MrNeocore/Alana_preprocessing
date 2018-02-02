@@ -7,11 +7,11 @@
 
 
 ## Requirements :
-  Linux (bash + sed) [for preprocessing only]
+  * Linux (bash + sed) [for preprocessing only]
   
-  Python 3
-    - pandas 
-    - tqdm (optional)
+  * Python 3
+     * pandas
+     * tqdm (optional)
   
   
 ##  How to : 
