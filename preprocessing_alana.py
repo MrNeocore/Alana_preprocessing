@@ -4,7 +4,6 @@
 
 import pandas as pd
 import sys
-import re
 
 with open(sys.argv[1], "r") as f:
 	in_json = f.read()

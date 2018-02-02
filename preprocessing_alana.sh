@@ -24,7 +24,7 @@ then
 	printf "Python3 'pandas' module not installed - install with 'sudo pip3 install pandas'\nExiting\n"
 else
 	printf "Processing - please wait... (~0.5-3 minutes)\n"
-	python3 script.py $1 
+	python3 preprocessing_alana.py $1 
 	
 	sed -i '1! s/\({"conv\)/,\n\1/' out.json 
 	sed -i 's/\({\"bot\)/\n\t\1/g' out.json
