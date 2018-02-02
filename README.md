@@ -1,6 +1,7 @@
 # Alana_preprocessing
 
-## Important note :  This software is provided as is and hasn't been extensively tested, you have been warned.
+## Important note : 
+  This software is provided as is and hasn't been extensively tested, you have been warned.
 ### Note : This repository has no (direct) use outside the HW Conversationnal Agent course
 
 
