@@ -31,7 +31,8 @@ If not renamed, the <ALANA_RAW_DATA_FILE> can be "sample_10.json" or "sample_20.
 python3 annotate.py <ALANA_PREPROCESSED_DATA_FILE> <ANNOTATIONS_OUTPUT_FILE>
 ```
 
-If not renamed, the <ALANA_PREPROCESSED_DATA_FILE> is named "out.json"
+If not renamed, the <ALANA_PREPROCESSED_DATA_FILE> is named "out.json".
+
 The <ANNOTATION_OUTPUT_FILE> argument can also be used to resume annotation (no need to indicate a seperate file everytime)
 
 A "manual" on how to use this script is included in this script itself
