@@ -1,8 +1,6 @@
 # Author  : MEYER Jonathan
 # Data    : 02/02/2018
-# Version : 1.0
-
-# Note : I 
+# Version : 1.01
 
 import pandas as pd
 import pprint as pprint
@@ -19,7 +17,7 @@ except ImportError:
 
 VERSION = "1.0"
 trans = {'user':'U', 'system':'S' }
-sent = {'0':'neutral', '+':'positive', '-':'negative'}
+sents = {'0':'neutral', '+':'positive', '++':'very positive', '-':'negative', '--':'very negative'}
 term_width = 0
 
 pp = pprint.PrettyPrinter(depth=6)
@@ -67,7 +65,7 @@ def filter_already_annotated(data, filename):
 
 
 
-def annotate(convs):
+def annotate(convs): 
 
 	if len(convs) == 0:
 		print("No conversations to annotate - exiting")
@@ -80,30 +78,36 @@ def annotate(convs):
 	stop = False
 	i = 0
 
-	while not stop and i < len(convs):
-		done = False
-		pp.pprint(convs[i])
-			
-		while not done:
-			res = classify()
-			
-			if res == "q": 	# QUIT
-				stop = True
-				done = True
-		
-			elif res == "s": 	# SKIP CURRENT
-				print("Skipping conversation")
-				del convs[i]
-				done = True
-	
-			else: 				# CONFIRM ANNOTATION 
-				confirm = input(f"Confirm '{sent[res]}' sentiment ? ")
-				if confirm == "":
-					convs[i]['sent'] = res
-					count += 1
+	try:
+		while not stop and i < len(convs):
+			done = False
+			pp.pprint({'convID':convs[i]['convID'], 'diag': convs[i]['diag']})
+				
+			while not done:
+				res = classify()
+				
+				if res == "q": 	# QUIT
+					stop = True
 					done = True
-					to_save.append(i)
-		i+=1
+			
+				elif res == "s": 	# SKIP CURRENT
+					print("Skipping conversation")
+					del convs[i]
+					done = True
+		
+				else: 				# CONFIRM ANNOTATION 
+					confirm = input(f"Confirm '{sents[res]}' sentiment ? ")
+					if confirm == "":
+						convs[i]['sent'] = res
+						count += 1
+						done = True
+						to_save.append(i)
+			i+=1
+			print("\n")
+	
+	except KeyboardInterrupt:
+		done = True
+		stop = True
 	
 	convs = [convs[j] for j in to_save]
 
@@ -126,8 +130,8 @@ def save(json_data, filename):
 
 # Handle part of the user input
 def classify():
-	res = input("Type '+', '-' or '0' : ")
-	while res not in list(sent.keys()) + ["s", "q"]:
+	res = input(f"Type {list(sents.keys())} : ")
+	while res not in list(sents.keys()) + ["s", "q"]:
 		print("Input a valid sentiment...")
 		res = input("Type '+', '-' or '0' : ")
 
@@ -136,7 +140,7 @@ def classify():
 def disclaimer():
 	print("/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\\".center(term_width))
 	print("You are about to use a software that is provided for free and has received little testing".center(term_width))
-	print("Its author cannot be held responsible for any problem it may cause /!\\".center(term_width))
+	print("Its author cannot be held responsible for any problem it may cause".center(term_width))
 	print("It is advisable to copy the 'annotations.json' file regularily in order to avoid any large data loss".center(term_width))
 	print("\!/\!/\!/\!/\!/\!/\!/\!/\!/\!/\!/\!/\!/\!/\!/\!/\!/\!/\!/\!/\!/\!/\!/\!/\!/\!/\!/\!/".center(term_width))
 	
@@ -144,10 +148,17 @@ def disclaimer():
 		print("You didn't accept the terms - exiting")
 		exit(1)
 
+def sents_to_str():
+	txt = "\n"
+	for key, sent in sents.items():
+		txt += f"\t{key} ({sent})\n"
+	
+	return txt
+
 def manual():
 	print("\n")
 	print("\tSoftware 'manual'\n")
-	print("Save the sentiment associated with the following discussions using '+' (positive), '-' (negative) or '0' (neutral)")
+	print(f"Save the sentiment associated with the following discussions using : {sents_to_str()}")
 	print("You can skip a discussion by typing 's'")
 	print("You can exit the program by typing 'q'")
 	print("Note : You can annotate the data in several chunks, this software should take care of resuming and saving data accordingly\n")
@@ -171,7 +182,7 @@ if __name__ == "__main__":
 	data = load(file_in)
 	data = filter_already_annotated(data, file_out)
 	data = annotate(data)
-	print(f"{len(data)} discussions annotated - Saving...")
+	print(f"\n{len(data)} discussions annotated - Saving...")
 
 	if len(data):
 		save(data, file_out)
