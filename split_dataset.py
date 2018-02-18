@@ -11,25 +11,27 @@ def get_param():
 		invalid_conf = True
 		print("Missing arguments")
 	
-	try:
-		num_split = int(sys.argv[2]) 
-		overlap = int(sys.argv[3])
-		num_records = int(sys.argv[4])
-	except ValueError:
-		invalid_conf = True
-		print("Values for 'num_split' and / or 'overall' and / or 'num_records' are not integers")
+	else:
+		try:
+			num_split = int(sys.argv[2]) 
+			overlap = int(sys.argv[3])
+			num_records = int(sys.argv[4])
 
-	if overlap < 0 or overlap > 99:
-		invalid_conf = True
-		print("Invalid 'overlap' value")
+		except ValueError:
+			invalid_conf = True
+			print("Values for 'num_split' and / or 'overall' and / or 'num_records' are not integers")
+			
+		if not invalid_conf and (overlap < 0 or overlap > 99):
+			invalid_conf = True
+			print("Invalid 'overlap' value")
 
-	if num_split < 0:
-		invalid_conf = True
-		print("Invalid 'num_split' value")
+		if not invalid_conf and num_split < 0:
+			invalid_conf = True
+			print("Invalid 'num_split' value")
 
-	if num_records < 0:
-		invalid_conf = True
-		print("Invalid 'records_per_split' value") # Not covering num_records * num_split > len(data)
+		if not invalid_conf and num_records < 0:
+			invalid_conf = True
+			print("Invalid 'records_per_split' value") # Not covering num_records * num_split > len(data)
 
 	if invalid_conf:
 		print_usage()

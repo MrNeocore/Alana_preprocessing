@@ -1,5 +1,5 @@
 # Author  : MEYER Jonathan
-# Data    : 02/02/2018
+# Date    : 02/02/2018
 # Version : 1.01
 
 import pandas as pd
@@ -7,6 +7,7 @@ import pprint as pprint
 import json
 import sys
 import os
+from random import shuffle
 
 try:
     from tqdm import tqdm
@@ -17,7 +18,9 @@ except ImportError:
 
 VERSION = "1.0"
 trans = {'user':'U', 'system':'S' }
-sents = {'0':'neutral', '+':'positive', '++':'very positive', '-':'negative', '--':'very negative'}
+sents = {'0':'neutral', '+':'positive', '++':'very positive', '-':'negative', '--':'very negative', 's':'null'}
+extra_keys = ['q'] # ,'s']
+
 term_width = 0
 
 pp = pprint.PrettyPrinter(depth=6)
@@ -31,11 +34,17 @@ def load(filename):
 
 	print("Preparing for annotation")
 
-	for conv in tqdm(data.iterrows(), total=len(data)):
-		conversations.append({ 'convID': conv[1]['conversationID'], 
-							   'diag': [(trans[turn['actor']],turn['utterance']) for turn in conv[1]['dialogue']],
-							   'sent': 'waiting' })
-	
+	try:
+		for conv in tqdm(data.iterrows(), total=len(data)):
+			#import pdb;pdb.set_trace()
+			conversations.append({ 'convID': conv[1]['conversationID'], 
+								   'diag': [(trans[turn['actor']],turn['utterance']) for turn in conv[1]['dialogue']],
+								   'rnd': conv[1]['rnd'],
+								   'sent': 'waiting' })
+	except Exception as e:
+		print(e)
+		import pdb; pdb.set_trace()
+
 	print("\nReady to annotate")
 
 	return conversations
@@ -81,7 +90,7 @@ def annotate(convs):
 	try:
 		while not stop and i < len(convs):
 			done = False
-			pp.pprint({'convID':convs[i]['convID'], 'diag': convs[i]['diag']})
+			pp.pprint({'convID':convs[i]['convID'], 'diag': convs[i]['diag'], 'rnd': convs[i]['rnd']})
 				
 			while not done:
 				res = classify()
@@ -90,10 +99,10 @@ def annotate(convs):
 					stop = True
 					done = True
 			
-				elif res == "s": 	# SKIP CURRENT
-					print("Skipping conversation")
-					del convs[i]
-					done = True
+				#elif res == "s": 	# SKIP CURRENT
+				#	print("Skipping conversation")
+				#	del convs[i]
+				#	done = True
 		
 				else: 				# CONFIRM ANNOTATION 
 					confirm = input(f"Confirm '{sents[res]}' sentiment ? ")
@@ -105,7 +114,7 @@ def annotate(convs):
 			i+=1
 			print("\n")
 	
-	except KeyboardInterrupt:
+	except (KeyboardInterrupt, EOFError): # Catch Ctrl-C & Ctrl-D
 		done = True
 		stop = True
 	
@@ -130,10 +139,10 @@ def save(json_data, filename):
 
 # Handle part of the user input
 def classify():
-	res = input(f"Type {list(sents.keys())} : ")
-	while res not in list(sents.keys()) + ["s", "q"]:
+	res = input(f"Type {list(sents.keys())+extra_keys} : ")
+	while res not in list(sents.keys()) + extra_keys:
 		print("Input a valid sentiment...")
-		res = input("Type '+', '-' or '0' : ")
+		res = input(f"Type {list(sents.keys())+extra_keys} : ")
 
 	return res
 
@@ -158,11 +167,12 @@ def sents_to_str():
 def manual():
 	print("\n")
 	print("\tSoftware 'manual'\n")
-	print(f"Save the sentiment associated with the following discussions using : {sents_to_str()}")
-	print("You can skip a discussion by typing 's'")
-	print("You can exit the program by typing 'q'")
-	print("Note : You can annotate the data in several chunks, this software should take care of resuming and saving data accordingly\n")
-	input("Press a key to continue\n\n")
+	print(f"Save the sentiment associated with the following discussions using : {sents_to_str()}.")
+	#print("You can skip a discussion by typing 's'.")
+	print("You can indicate that the dialogue turn is 'irrelevant' ('null' sentiment) by typing 's'.")
+	print("You can exit the program by typing 'q'.")
+	print("Note : You can annotate the data in several chunks, this software should take care of resuming and saving data accordingly.\n")
+	input("Press a key to continue.\n\n")
 
 def intro():
 	global term_width
@@ -174,17 +184,35 @@ def intro():
 	disclaimer()
 	manual()
 
-if __name__ == "__main__":
-	intro()
-	file_in = sys.argv[1]
-	file_out = sys.argv[2]
+def print_usage():
+	print("python3 annotate.py <ALANA_DATA_FILE> <OUTPUT_DATA_FILE>")
 
-	data = load(file_in)
-	data = filter_already_annotated(data, file_out)
+def get_params():
+	if len(sys.argv) < 3:
+		print("Missing arguments")
+		print_usage()
+		exit(1)
+
+	in_file = sys.argv[1]
+	out_file = sys.argv[2]
+	
+	try:
+		pd.read_json(in_file)
+	except:
+		print("Input file doesn't exists or is invalid")
+		exit(1)
+	else:
+		return in_file, out_file
+
+if __name__ == "__main__":
+	in_file, out_file = get_params()
+	intro()
+	data = load(in_file)
+	data = filter_already_annotated(data, out_file)
 	data = annotate(data)
 	print(f"\n{len(data)} discussions annotated - Saving...")
 
 	if len(data):
-		save(data, file_out)
+		save(data, out_file)
 		print(f"Annotation appended in file {file_out}")
 
