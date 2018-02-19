@@ -22,7 +22,7 @@
 
 Clone this repository and execute the following commands :
 
-<ALANA_DATA_FILE> can be either the original or the preprocessed data (named "out.json" by default)
+<ALANA_DATA_FILE> can be either the raw data, the preprocessed data (named "out.json" by default) or a dataset coming out of the split_dataset script.
 
 
 ### Filtering :
@@ -33,10 +33,11 @@ For now, it is simply checking if user's utterances contain words likely to conv
 The database used is "Liu and Hu opinion lexicon" (for reference -> https://www.cs.uic.edu/~liub/FBS/sentiment-analysis.html#lexicon)
 
 ```bash
-python3 filter.py <ALANA_DATA_FILE> <FILTER_WORDS_DATA_FILE> <FILTERED_DATA_OUTPUT_FILE>
+python3 filter.py <ALANA_DATA_FILE> <FILTER_WORDS_DATA_FILE> <RANDOM_INTEGER_PERC> <FILTERED_DATA_OUTPUT_FILE>
 ```
+<RANDOM_INTEGER_PERC> : Percentage of random utterances to add 
 
-The <FILTER_WORDS_DATA_FILES> is a text file with a single word on every line. If any of those words is found in an user's utterance, the dialogue turn is saved to the output file
+<FILTER_WORDS_DATA_FILES> : Text file with a single word on every line. If any of those words is found in an user's utterance, the dialogue turn is saved to the output file
 
 
 ### (Optional) Split dataset into smaller datasets for group annotation
@@ -55,10 +56,8 @@ Ex : "dataset" -> [dataset0-1.json, dataset1-2.json, dataset2-0.json]
 
 ### Annotation :
 ```bash
-python3 annotate.py <ALANA_PREPROCESSED_DATA_FILE> <ANNOTATIONS_OUTPUT_FILE>
+python3 annotate.py <ALANA_DATA_FILE> <ANNOTATIONS_OUTPUT_FILE>
 ```
-
-If not renamed, the <ALANA_PREPROCESSED_DATA_FILE> is named "out.json"
 
 The <ANNOTATION_OUTPUT_FILE> argument can also be used to resume annotation (no need to indicate a seperate file everytime)
 
@@ -66,6 +65,8 @@ A "manual" on how to use this script is included in this script itself
 
 
 ### (Optional) Data processing to make the data human readable from a text editor : 
+##### [Turns out to be pretty useless]
+
 ```bash
 chmod +x preprocessing_alana.sh
 ./preprocessing_alana.sh <ALANA_RAW_DATA_FILE>
