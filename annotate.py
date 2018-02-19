@@ -1,13 +1,12 @@
 # Author  : MEYER Jonathan
-# Date    : 02/02/2018
-# Version : 1.01
+# Date    : 19/02/2018
+# Version : 1.02.1
 
 import pandas as pd
 import pprint as pprint
 import json
 import sys
 import os
-from random import shuffle
 
 try:
     from tqdm import tqdm
@@ -18,7 +17,7 @@ except ImportError:
 
 VERSION = "1.0"
 trans = {'user':'U', 'system':'S' }
-sents = {'0':'neutral', '+':'positive', '++':'very positive', '-':'negative', '--':'very negative', 's':'null'}
+sents = {'0':'neutral', '+':'positive', '++':'very positive', '-':'negative', '--':'very negative', 's':'null', 'u':'unknown'}
 extra_keys = ['q'] # ,'s']
 
 term_width = 0
@@ -170,6 +169,7 @@ def manual():
 	print(f"Save the sentiment associated with the following discussions using : {sents_to_str()}.")
 	#print("You can skip a discussion by typing 's'.")
 	print("You can indicate that the dialogue turn is 'irrelevant' ('null' sentiment) by typing 's'.")
+	print("You can flag a dialogue turn with the 'sentiment' 'u' (unknown) when you aren't sure which sentiment this should be associated.")
 	print("You can exit the program by typing 'q'.")
 	print("Note : You can annotate the data in several chunks, this software should take care of resuming and saving data accordingly.\n")
 	input("Press a key to continue.\n\n")

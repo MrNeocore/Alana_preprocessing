@@ -21,7 +21,7 @@ def get_param():
 			invalid_conf = True
 			print("Values for 'num_split' and / or 'overall' and / or 'num_records' are not integers")
 			
-		if not invalid_conf and (overlap < 0 or overlap > 99):
+		if not invalid_conf and (overlap < 0 or overlap > 100):
 			invalid_conf = True
 			print("Invalid 'overlap' value")
 
@@ -54,9 +54,9 @@ def split_dataset(data, num_splits, overlap, num_records):
 		splits.append(split_data)
 
 	# Handle last split
-	index_h = int(num_records*(idx+2))
+	index_h = int(num_records*(idx+2)) - 1
 	index_l = num_records*(idx+1)	
-	split_data = pd.concat([df.loc[index_l:index_h], df.loc[0:int(overlap/100*num_records)]])
+	split_data = pd.concat([df.loc[index_l:index_h], df.loc[0:int(overlap/100*num_records)-1]])
 	splits.append(split_data)
 	
 
@@ -68,7 +68,7 @@ def save(data, out_file):
 		with open(out_filename, "w") as f:
 			f.write(data[idx].to_json())
 	
-	out_filename = f"{out_file}{len(data)}-0.json"
+	out_filename = f"{out_file}{len(data)-1}-0.json"
 	with open(out_filename, "w") as f:
 		f.write(data[-1].to_json())
 	
