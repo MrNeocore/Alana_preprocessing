@@ -92,7 +92,7 @@ def annotate(convs):
 			pp.pprint({'convID':convs[i]['convID'], 'diag': convs[i]['diag'], 'rnd': convs[i]['rnd']})
 				
 			while not done:
-				res = classify()
+				res, ambiguous = classify()
 				
 				if res == "q": 	# QUIT
 					stop = True
@@ -104,9 +104,17 @@ def annotate(convs):
 				#	done = True
 		
 				else: 				# CONFIRM ANNOTATION 
-					confirm = input(f"Confirm '{sents[res]}' sentiment ? ")
+					confirm_text = f"Confirm '{sents[res]}' sentiment"
+
+					if ambiguous:
+						confirm_text += " (flagged ambiguous)"
+
+					confirm_text += " ?"
+
+					confirm = input(confirm_text)
 					if confirm == "":
 						convs[i]['sent'] = res
+						convs[i]['ambiguous'] = ambiguous
 						count += 1
 						done = True
 						to_save.append(i)
@@ -138,12 +146,20 @@ def save(json_data, filename):
 
 # Handle part of the user input
 def classify():
+	ambiguous = False
 	res = input(f"Type {list(sents.keys())+extra_keys} : ")
+	if len(res) and res[0] == 'a':
+		res = res[1:]
+		ambiguous = True
+	
 	while res not in list(sents.keys()) + extra_keys:
 		print("Input a valid sentiment...")
 		res = input(f"Type {list(sents.keys())+extra_keys} : ")
+		if len(res) and res[0] == 'a':
+			res = res[1:]
+			ambiguous = True
 
-	return res
+	return res, ambiguous
 
 def disclaimer():
 	print("/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\\".center(term_width))
@@ -171,6 +187,7 @@ def manual():
 	print("You can indicate that the dialogue turn is 'irrelevant' ('null' sentiment) by typing 's'.")
 	print("You can flag a dialogue turn with the 'sentiment' 'u' (unknown) when you aren't sure which sentiment this should be associated.")
 	print("You can exit the program by typing 'q'.")
+	print("You can add the prefix 'a' to a sentiment to flag the turn as being ambiguous.")
 	print("Note : You can annotate the data in several chunks, this software should take care of resuming and saving data accordingly.\n")
 	input("Press a key to continue.\n\n")
 
@@ -214,5 +231,5 @@ if __name__ == "__main__":
 
 	if len(data):
 		save(data, out_file)
-		print(f"Annotation appended in file {file_out}")
+		print(f"Annotation appended in file {out_file}")
 
