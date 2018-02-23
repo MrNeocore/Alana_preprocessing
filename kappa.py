@@ -7,22 +7,53 @@ import sys
 import os
 import sklearn.metrics
 import pprint as pprint
+import annotate
 
-def print_results(results):
+def get_divergent(results):
+	divergent = pd.DataFrame.from_records(results)
+	divergent = divergent[divergent['identical'] == False][['convID', 'annot1', 'annot2', 'diag']] 
+
+	return divergent
+
+def print_divergent(div):
 	print("\n\n[ANNOTATION DIVERGENCE DETAILS]")
 
 	pd.set_option('display.max_colwidth', len(results[0]['convID']))
 	pd.set_option('display.width', 1000)
-
-	divergent = pd.DataFrame.from_records(results)
-	divergent = divergent[divergent['identical'] == False][['convID', 'annot1', 'annot2']] 
 	pp = pprint.PrettyPrinter(depth=6)
-	pp.pprint(divergent)
+	pp.pprint(div)
+
+def fix_divergent(div, data, files):
+	files_data = {}
+
+	for f in files:
+		files_data[f] = pd.read_json(f)
+
+	found = []
+
+	for conv in list(div['convID']):
+		for f, d in files_data.items():
+			if conv in list(d['convID']):
+				found.append((conv, f))
+
+	data = data.loc[data['convID'].isin(div['convID'])]
+	data = data.drop_duplicates(subset='convID')
+	data = list(data.T.to_dict().values())
+	
+	data = annotate.annotate(data)
+
+	if len(data):
+		print(f"\n{len(data)} discussions annotated - Saving...")
+		out_file = input("Please enter an output filename : ")
+		out_file = "/".join(files[0].split('/')[:-1]) + "/" + "CORRECTED_" + out_file + ".json"
+		annotate.save(data, out_file)
+		print(f"Annotation appended in file {out_file}")
+
 
 def kappa(data):
 	print("\n\n[KAPPA SCORE CALCULATION]\n")
 
-	data = data[['convID', 'sent']]
+	data = data[['convID', 'sent', 'diag']]
 	data = data.groupby('convID') # Group annotation of the same utterance together
 	
 	count = 0
@@ -38,10 +69,10 @@ def kappa(data):
 				second = annotations[1]
 				annotator1.append(first)
 				annotator2.append(second)
-				results.append({'convID':x[0], 'identical':(first==second), 'annot1':first, 'annot2':second})
+				results.append({'convID':x[0], 'diag' : x[1]['diag'].iloc[0][0][1], 'identical':(first==second), 'annot1':first, 'annot2':second})
 				count += 1
 			else:
-				print(f"\t - One of the annotator has flagged the conversation {x['convID']} has 'unknown' - skipping")
+				print(f"\t - One of the annotator has flagged the conversation {x[0]} has 'unknown' - skipping")
 		else:
 			print(f"\t - Only one annotator for conversation {x[0]}")
 	
@@ -106,4 +137,8 @@ def get_files():
 if __name__ == "__main__":
 	in_files = get_files()
 	data = load_all(in_files)
-	print_results(kappa(data))
+	results = kappa(data)
+	div = get_divergent(results)
+	print_divergent(div)
+	if input("Do you want to fix now ? (y/n)") == "y":
+		fix_divergent(div, data, in_files)
