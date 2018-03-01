@@ -1,6 +1,6 @@
 # Author  : MEYER Jonathan
-# Date    : 23/02/2018
-# Version : 1.1
+# Date    : 01/03/2018
+# Version : 1.2
 
 import pandas as pd
 import sys
@@ -8,25 +8,22 @@ import os
 import sklearn.metrics
 import pprint as pprint
 import annotate
+#import debug
 
-# Unecessary transformation from list -> DF then back to list ?
-def to_df(dict_data):
-	new_dict = {}
-	divergent = pd.DataFrame.from_records(dict_data['div'])
-	new_dict['div'] = divergent[divergent['identical'] == False][['convID','diag', 'rnd']]
-
-	new_dict['unknown'] = pd.DataFrame.from_records(dict_data['unknown'])[['convID','diag', 'rnd']] 
-	new_dict['ambiguous'] = pd.DataFrame.from_records(dict_data['ambiguous'])[['convID','diag', 'rnd']] 
-		
-	return new_dict
+AMBIGUOUS_OK = True
+SKIPPED_OK = False
+UNKNOWN_OK = False	
 
 def print_divergent(div):
 	print("\n\n[ANNOTATION DIVERGENCE DETAILS]")
-	pd.set_option('display.max_colwidth', int(div.convID.map(len).max()))
+	pd.set_option('display.max_colwidth', int(div.convID.map(len).max())+1)
 	pd.set_option('display.width', 1000)
-	pp = pprint.PrettyPrinter(depth=6)
-	pp.pprint(div)
+	pd.set_option('display.max_rows',500)
 
+	pp = pprint.PrettyPrinter(depth=6)
+	pp.pprint(div[['convID','diag', 'annot1', 'annot2']])
+	print(f"{len(div)} turns")
+	
 def fix_annotation(data, files):
 	combined = pd.concat(list(data.values()))
 	combined = combined.drop_duplicates(subset='convID')
@@ -52,37 +49,53 @@ def kappa(data):
 	count = 0
 	annotator1 = []
 	annotator2 = []
-	results = []
+
+	div = []
 	unknowns = []
 	ambiguous = []
+	good = []
+	skipped = []
+	a = []
 
 	for x in data:
 		annotations = list(x[1]['sent'])
-		rnd = list(x[1]['rnd'])[0]
-	
-		# Conversation annotated by 2+ person
-		if len(annotations) > 1:
-			# None of the annotators skipped this conversation ("unknown")
-			if 'u' not in annotations:
-				first = annotations[0]
-				second = annotations[1]
+		rnd = list(x[1]['rnd'])[0] == 'True'
+		multi_annotator = len(annotations) > 1
+		unknown_flag = 'u' in annotations
+		skipped_flag = 's' in annotations
+		ambiguous_flag = True in list(x[1]['ambiguous'])
+		
+		first = annotations[0]
+		
+		record = {'convID':x[0], 'diag' : x[1]['diag'].iloc[0][0], 'rnd':rnd, 'ambiguous':ambiguous_flag, 'multi':False, 'identical':True, 'annot1':first, 'annot2':"", 'unknown':unknown_flag, 'skipped':skipped_flag}
+
+		if multi_annotator:
+			second = annotations[1]
+			same_annot = first == second
+			record.update({'identical': same_annot, 'annot2': second, 'multi':True})	
+				
+			if not unknown_flag:
 				annotator1.append(first)
 				annotator2.append(second)
-				results.append({'convID':x[0], 'diag' : x[1]['diag'].iloc[0][0], 'identical':(first==second), 'annot1':first, 'annot2':second, 'rnd':rnd}) # Rnd required by annotate
 				count += 1
 
-				# Conversation flagged ambiguous by any of the annotators 
-				if True in list(x[1]['ambiguous']):
-					print(f"\t - One of the annotator has flagged the conversation {x[0]} as 'ambiguous'")
-					ambiguous.append({'convID':x[0], 'diag' : x[1]['diag'].iloc[0][0], 'identical':(first==second), 'annot1':first, 'annot2':second, 'rnd':rnd})
-			
-			# Conversation flagged 'unknown' by any of the annotators 			
-			else:
-				unknowns.append({'convID':x[0], 'diag' : x[1]['diag'].iloc[0][0], 'identical':(first==second), 'annot1':first, 'annot2':second, 'rnd':rnd})
-				print(f"\t - One of the annotator has flagged the conversation {x[0]} as 'unknown' - skipping")
-		else:
-			print(f"\t - Only one annotator for conversation {x[0]}")
-	
+		a.append(record)
+
+	a = pd.DataFrame.from_records(a)
+	div = a.loc[(a['identical'] == False) & (a['unknown'] == False)]
+	unknowns = a.loc[a['unknown'] == True]
+	ambiguous = a.loc[a['ambiguous'] == True]
+	skipped = a.loc[a['skipped'] == True]	
+
+	good = a.loc[a['identical'] == True]
+
+	if not UNKNOWN_OK:
+		good = good.loc[good['unknown'] == False]
+	if not AMBIGUOUS_OK:
+		good = good.loc[good['ambiguous'] == False]
+	if not SKIPPED_OK:
+		good = good.loc[good['skipped'] == False]			
+
 	# Convert strings into numbers (~hashing) because kappa_score only works on numbers
 	annotator1 = [sum([ord(x) for x in y]) for y in annotator1]
 
@@ -93,9 +106,20 @@ def kappa(data):
 	annotator2 =  [sum([ord(x) for x in y]) for y in annotator2]
 	annotator2 = [x+n for n, x in enumerate(annotator2)] 
 
-	print(f"\nScore ==>  {sklearn.metrics.cohen_kappa_score(annotator1, annotator2)} ({count} comparisons)")
+	print(f"Score ==>  {sklearn.metrics.cohen_kappa_score(annotator1, annotator2)} ({count} comparisons)")
 
-	return {'div':results, 'unknown':unknowns, 'ambiguous':ambiguous}
+	return {'div':div, 'unknown':unknowns, 'ambiguous':ambiguous, 'good':good, 'skipped':skipped}
+
+def save_good(good):
+	good = good.drop_duplicates(subset='convID')
+	good['sent'] = good['annot1']
+	good = good.drop('annot1', axis=1)
+	good = good.drop('annot2', axis=1)
+	good = good.drop('identical', axis=1)
+
+	good = list(good.T.to_dict().values())
+	
+	annotate.save(good, "combined_good.json")
 
 def load_all(in_files):
 	print("[LOAD ANNOTATION FILES]\n")
@@ -145,7 +169,8 @@ if __name__ == "__main__":
 	in_files = get_files()
 	data = load_all(in_files)
 	results = kappa(data)
-	results = to_df(results)
+	#results = to_df(results)
 	print_divergent(results['div'])
+	save_good(results['good'])
 	if input("Do you want to fix now ? (y/n)") == "y":
 		fix_annotation(results, in_files)
