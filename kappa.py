@@ -8,7 +8,7 @@ import os
 import sklearn.metrics
 import pprint as pprint
 import annotate
-#import debug
+import debug
 
 AMBIGUOUS_OK = True
 SKIPPED_OK = False
@@ -25,12 +25,11 @@ def print_divergent(div):
 	print(f"{len(div)} turns")
 	
 def fix_annotation(data, files):
-	combined = pd.concat(list(data.values()))
-	combined = combined.drop_duplicates(subset='convID')
-	combined = list(combined.T.to_dict().values())
-
+	data = data[['convID', 'diag', 'rnd']]
+	data = list(data.T.to_dict().values())
+	
 	print("\n")
-	annotations = annotate.annotate(combined)
+	annotations = annotate.annotate(data)
 
 	if len(annotations):
 		print(f"\n{len(annotations)} discussions annotated - Saving...")
@@ -169,8 +168,7 @@ if __name__ == "__main__":
 	in_files = get_files()
 	data = load_all(in_files)
 	results = kappa(data)
-	#results = to_df(results)
 	print_divergent(results['div'])
 	save_good(results['good'])
 	if input("Do you want to fix now ? (y/n)") == "y":
-		fix_annotation(results, in_files)
+		fix_annotation(results['div'], in_files)
