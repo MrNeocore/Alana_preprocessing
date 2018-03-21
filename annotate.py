@@ -74,7 +74,6 @@ def filter_already_annotated(data, filename):
 
 
 def annotate(convs): 
-
 	if len(convs) == 0:
 		print("No conversations to annotate - exiting")
 
